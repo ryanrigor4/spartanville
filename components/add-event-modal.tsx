@@ -11,6 +11,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "@/app/firebase/config";
 
 interface AddEventModalProps {
   isOpen: boolean;
@@ -18,41 +20,57 @@ interface AddEventModalProps {
 }
 
 export function AddEventModal({ isOpen, onClose }: AddEventModalProps) {
-  const [title, setTitle] = useState("''");
-  const [date, setDate] = useState("''");
-  const [time, setTime] = useState("''");
-  const [location, setLocation] = useState("''");
-  const [image, setImage] = useState("''");
-  const [clubAssociation, setClubAssociation] = useState("''");
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [location, setLocation] = useState("");
+  const [image, setImage] = useState("");
+  const [clubAssociation, setClubAssociation] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically call your API to create a new event
-    console.log("'New event:'", {
-      title,
-      date,
-      time,
-      location,
-      image,
-      clubAssociation,
-    });
-    toast({
-      title: "Event created",
-      description: "Your new event has been successfully added.",
-    });
-    // Reset form and close modal
-    resetForm();
-    onClose();
+    setIsSubmitting(true);
+
+    try {
+      // Create new event document in Firestore
+      await addDoc(collection(db, "events"), {
+        title,
+        date,
+        time,
+        location,
+        image: image || "", // Use empty string if no image provided
+        clubAssociation: clubAssociation || "", // Use empty string if no club provided
+        attendanceCount: 0, // Initialize with 0 attendees
+      });
+
+      toast({
+        title: "Event created",
+        description: "Your new event has been successfully added.",
+      });
+
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error("Error adding event:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create event. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
-    setTitle("''");
-    setDate("''");
-    setTime("''");
-    setLocation("''");
-    setImage("''");
-    setClubAssociation("''");
+    setTitle("");
+    setDate("");
+    setTime("");
+    setLocation("");
+    setImage("");
+    setClubAssociation("");
   };
 
   return (
@@ -90,18 +108,20 @@ export function AddEventModal({ isOpen, onClose }: AddEventModalProps) {
           />
           <Input
             type="url"
-            placeholder="Image URL"
+            placeholder="Image URL (optional)"
             value={image}
             onChange={(e) => setImage(e.target.value)}
           />
           <Input
             type="text"
-            placeholder="Club/Association"
+            placeholder="Club/Association (optional)"
             value={clubAssociation}
             onChange={(e) => setClubAssociation(e.target.value)}
           />
           <DialogFooter>
-            <Button type="submit">Add Event</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Adding..." : "Add Event"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

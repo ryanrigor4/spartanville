@@ -11,6 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  collection,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  updateDoc,
+  increment,
+} from "firebase/firestore";
+import { db, auth } from "@/app/firebase/config";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 interface Event {
   id: string;
@@ -35,66 +45,80 @@ export function EventList({
 }: EventListProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
 
   useEffect(() => {
-    // Fetch events from API
-    // For now, we'll use dummy data
-    setEvents([
-      {
-        id: "1",
-        title: "Welcome Week",
-        date: "2023-08-21",
-        time: "9:00 AM",
-        location: "Student Union",
-        image: "/placeholder.svg",
-        clubAssociation: "Student Life",
-        attendanceCount: 50,
-        userAttending: false,
-      },
-      {
-        id: "2",
-        title: "Career Fair",
-        date: "2023-09-15",
-        time: "10:00 AM",
-        location: "Event Center",
-        image: "/placeholder.svg",
-        clubAssociation: "Career Center",
-        attendanceCount: 100,
-        userAttending: true,
-      },
-    ]);
-  }, []);
+    if (!user) return;
 
-  const handleDelete = (id: string) => {
-    // Here you would typically call your API to delete the event
-    setEvents(events.filter((event) => event.id !== id));
-    toast({
-      title: "Event deleted",
-      description: "The event has been successfully removed.",
+    // Set up real-time listener for events
+    const unsubscribe = onSnapshot(collection(db, "events"), (snapshot) => {
+      const eventData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        userAttending: false, // We'll update this based on user's attendance
+      })) as Event[];
+
+      setEvents(eventData);
     });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "events", id));
+      toast({
+        title: "Event deleted",
+        description: "The event has been successfully removed.",
+      });
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the event. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleAttendanceChange = (id: string, attending: boolean) => {
-    // Here you would typically call your API to update attendance
-    setEvents(
-      events.map((event) =>
-        event.id === id
-          ? {
-              ...event,
-              userAttending: attending,
-              attendanceCount: attending
-                ? event.attendanceCount + 1
-                : event.attendanceCount - 1,
-            }
-          : event
-      )
-    );
-    toast({
-      title: attending ? "Attending event" : "Not attending event",
-      description: `You are ${attending ? "now" : "no longer"} attending "${
-        events.find((e) => e.id === id)?.title
-      }".`,
-    });
+  const handleAttendanceChange = async (id: string, attending: boolean) => {
+    if (!user) return;
+
+    try {
+      const eventRef = doc(db, "events", id);
+      await updateDoc(eventRef, {
+        attendanceCount: increment(attending ? 1 : -1),
+      });
+
+      // Update local state for immediate UI feedback
+      setEvents(
+        events.map((event) =>
+          event.id === id
+            ? {
+                ...event,
+                userAttending: attending,
+                attendanceCount: attending
+                  ? event.attendanceCount + 1
+                  : event.attendanceCount - 1,
+              }
+            : event
+        )
+      );
+
+      toast({
+        title: attending ? "Attending event" : "Not attending event",
+        description: `You are ${attending ? "now" : "no longer"} attending "${
+          events.find((e) => e.id === id)?.title
+        }".`,
+      });
+    } catch (error) {
+      console.error("Error updating attendance:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update attendance. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredEvents = events.filter(
@@ -114,11 +138,17 @@ export function EventList({
             <CardTitle>{event.title}</CardTitle>
           </CardHeader>
           <CardContent>
-            <img
-              src={event.image}
-              alt={event.title}
-              className="w-full h-48 object-cover mb-4"
-            />
+            {event.image ? (
+              <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-48 object-cover mb-4"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-200 flex items-center justify-center mb-4">
+                No image available
+              </div>
+            )}
             <p>
               <strong>Date:</strong> {event.date}
             </p>
@@ -148,7 +178,7 @@ export function EventList({
                 htmlFor={`attend-${event.id}`}
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                I'm attending
+                I&apos;m attending
               </label>
             </div>
           </CardContent>

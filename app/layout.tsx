@@ -5,14 +5,9 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { auth } from "./firebase/config";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
-
-// export const metadata = {
-//   title: "Spartanville",
-//   description: "Showcase San Jose State and Student Life",
-// };
 
 export default function RootLayout({
   children,
@@ -21,15 +16,20 @@ export default function RootLayout({
 }) {
   const [user] = useAuthState(auth);
   const router = useRouter();
+  const pathname = usePathname();
 
-  if (!user) {
+  // List of paths where navbar should be hidden
+  const noNavbarPaths = ["/login", "/signup"];
+  const shouldShowNavbar = !noNavbarPaths.includes(pathname);
+
+  if (!user && !noNavbarPaths.includes(pathname)) {
     router.push("/login");
   }
 
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navbar />
+        {shouldShowNavbar && <Navbar />}
         <main>{children}</main>
       </body>
     </html>
