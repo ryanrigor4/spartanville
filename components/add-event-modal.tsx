@@ -1,52 +1,59 @@
-"'use client'"
+"use client";
 
-import { useState } from "'react'"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/components/ui/use-toast"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 interface AddEventModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function AddEventModal({ isOpen, onClose }: AddEventModalProps) {
-  const [title, setTitle] = useState("''")
-  const [date, setDate] = useState("''")
-  const [time, setTime] = useState("''")
-  const [location, setLocation] = useState("''")
-  const [image, setImage] = useState("''")
-  const [clubAssociation, setClubAssociation] = useState("''")
-  const { toast } = useToast()
+  const [title, setTitle] = useState("''");
+  const [date, setDate] = useState("''");
+  const [time, setTime] = useState("''");
+  const [location, setLocation] = useState("''");
+  const [image, setImage] = useState("''");
+  const [clubAssociation, setClubAssociation] = useState("''");
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     // Here you would typically call your API to create a new event
-    console.log("'New event:'", { title, date, time, location, image, clubAssociation })
+    console.log("'New event:'", {
+      title,
+      date,
+      time,
+      location,
+      image,
+      clubAssociation,
+    });
     toast({
       title: "Event created",
       description: "Your new event has been successfully added.",
-    })
+    });
     // Reset form and close modal
-    resetForm()
-    onClose()
-  }
+    resetForm();
+    onClose();
+  };
 
   const resetForm = () => {
-    setTitle("''")
-    setDate("''")
-    setTime("''")
-    setLocation("''")
-    setImage("''")
-    setClubAssociation("''")
-  }
+    setTitle("''");
+    setDate("''");
+    setTime("''");
+    setLocation("''");
+    setImage("''");
+    setClubAssociation("''");
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -99,6 +106,5 @@ export function AddEventModal({ isOpen, onClose }: AddEventModalProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

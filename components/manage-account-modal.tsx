@@ -36,7 +36,7 @@ export function ManageAccountModal({
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsLoggingOut(false);
     onClose();
-    router.push("'/login'");
+    router.push("/login");
     console.log({
       title: "Logged out successfully",
       description: "You have been logged out of your account.",
@@ -110,7 +110,7 @@ export function ManageAccountModal({
               />
             </div>
             <Button type="submit" disabled={isResettingPassword}>
-              {isResettingPassword ? "'Resetting...'" : "'Reset Password'"}
+              {isResettingPassword ? "Resetting..." : "Reset Password"}
             </Button>
           </form>
           <div className="relative">
@@ -128,7 +128,7 @@ export function ManageAccountModal({
             disabled={isLoggingOut}
             variant="outline"
           >
-            {isLoggingOut ? "'Logging out...'" : "'Logout'"}
+            {isLoggingOut ? "Logging out..." : "Logout"}
           </Button>
         </div>
       </DialogContent>

@@ -24,7 +24,7 @@ export function LoginForm() {
       title: "Logged in successfully",
       description: "Welcome back to Spartanville!",
     });
-    router.push("'/home'");
+    router.push("/home");
   };
 
   const handleGoogleSignIn = async () => {
@@ -37,7 +37,7 @@ export function LoginForm() {
       title: "Logged in with Google",
       description: "Welcome to Spartanville!",
     });
-    router.push("'/home'");
+    router.push("/home");
   };
 
   return (

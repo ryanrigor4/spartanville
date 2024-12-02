@@ -1,5 +1,3 @@
-import { Navbar } from "@/components/navbar";
-
 export default function AuthenticatedLayout({
   children,
 }: {
@@ -7,7 +5,6 @@ export default function AuthenticatedLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8">{children}</main>
     </div>
   );
