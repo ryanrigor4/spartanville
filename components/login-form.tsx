@@ -6,25 +6,55 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/app/firebase/config";
 
 export function LoginForm() {
   const [email, setEmail] = useState("''");
   const [password, setPassword] = useState("''");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoggingIn(true);
-    // Here you would typically call your authentication API
-    // For now, we'll just simulate a delay and successful login
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoggingIn(false);
-    console.log({
-      title: "Logged in successfully",
-      description: "Welcome back to Spartanville!",
-    });
-    router.push("/home");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log({
+        title: "Logged in successfully",
+        description: "Welcome back to Spartanville!",
+      });
+      router.push("/home");
+    } catch (error: any) {
+      let errorMessage = "Failed to login. Please try again.";
+
+      // Handle specific Firebase auth errors
+      switch (error.code) {
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address.";
+          break;
+        case "auth/user-disabled":
+          errorMessage = "This account has been disabled.";
+          break;
+        case "auth/user-not-found":
+          errorMessage = "No account found with this email.";
+          break;
+        case "auth/wrong-password":
+          errorMessage = "Incorrect password.";
+          break;
+        case "auth/too-many-requests":
+          errorMessage = "Too many failed attempts. Please try again later.";
+          break;
+      }
+
+      setError(errorMessage);
+      console.error("Login error:", error);
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -43,6 +73,9 @@ export function LoginForm() {
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="text-sm text-red-500 dark:text-red-400">{error}</div>
+        )}
         <div>
           <Input
             type="email"
