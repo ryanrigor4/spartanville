@@ -12,10 +12,22 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/app/firebase/config";
 
 interface Message {
-  role: "'user'" | "'assistant'";
+  role: "user" | "assistant";
   content: string;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  clubAssociation?: string;
+  attendanceCount: number;
 }
 
 interface AIEventAssistantProps {
@@ -25,31 +37,105 @@ interface AIEventAssistantProps {
 export function AIEventAssistant({ onClose }: AIEventAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
-      role: "'assistant'",
+      role: "assistant",
       content:
-        "'Hello! I'm your AI Event Assistant. How can I help you with SJSU events today?'",
+        "Hello! I'm your AI Event Assistant. How can I help you with SJSU events today?",
     },
   ]);
-  const [input, setInput] = useState("''");
+  const [input, setInput] = useState("");
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch events when component mounts
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const eventsCollection = collection(db, "events");
+      const eventsSnapshot = await getDocs(eventsCollection);
+      const eventsData = eventsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Event[];
+      setEvents(eventsData);
+    };
+
+    fetchEvents();
+  }, []);
+
+  const processUserQuery = async (query: string) => {
+    // Format events data for the AI
+    const eventsContext = events
+      .map(
+        (event) => `
+      Event: ${event.title}
+      Date: ${event.date}
+      Time: ${event.time}
+      Location: ${event.location}
+      Club/Association: ${event.clubAssociation || "N/A"}
+      Attendance: ${event.attendanceCount} people
+    `
+      )
+      .join("\n\n");
+
+    // Prepare the prompt for Anthropic
+    const prompt = `
+      You are an AI assistant helping users find information about SJSU events. Here are the current events:
+
+      ${eventsContext}
+
+      User question: ${query}
+
+      Please provide a helpful, concise response based on the available event information. If asked about attendance, provide exact numbers. If asked about recommendations, suggest specific events that match the criteria. If the information isn't available, politely say so.
+    `;
+
+    try {
+      // Make API call to your backend endpoint that handles Anthropic
+      const response = await fetch("/api/ai-assistant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI response");
+      }
+
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      console.error("Error getting AI response:", error);
+      return "I apologize, but I'm having trouble processing your request right now. Please try again later.";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: "'user'", content: input };
+    const userMessage: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
-    setInput("''");
+    setInput("");
+    setIsLoading(true);
 
-    // Here you would typically call your AI API
-    // For now, we'll use a dummy response
-    setTimeout(() => {
+    try {
+      const aiResponse = await processUserQuery(input);
       const aiMessage: Message = {
-        role: "'assistant'",
-        content: `Thank you for your question about "${input}". Here's some information about SJSU events: [AI-generated content would go here]`,
+        role: "assistant",
+        content: aiResponse,
       };
       setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      const errorMessage: Message = {
+        role: "assistant",
+        content:
+          "I apologize, but I encountered an error processing your request. Please try again.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -70,14 +156,14 @@ export function AIEventAssistant({ onClose }: AIEventAssistantProps) {
             <div
               key={index}
               className={`mb-4 ${
-                message.role === "'user'" ? "'text-right'" : "'text-left'"
+                message.role === "user" ? "text-right" : "text-left"
               }`}
             >
               <div
                 className={`inline-block p-2 rounded-lg ${
-                  message.role === "'user'"
-                    ? "'bg-primary text-primary-foreground'"
-                    : "'bg-muted'"
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
                 }`}
               >
                 {message.content}
@@ -94,8 +180,11 @@ export function AIEventAssistant({ onClose }: AIEventAssistantProps) {
             placeholder="Ask about SJSU events..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            disabled={isLoading}
           />
-          <Button type="submit">Send</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "..." : "Send"}
+          </Button>
         </form>
       </CardFooter>
     </Card>
