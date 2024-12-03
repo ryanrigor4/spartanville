@@ -1,20 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { FcGoogle } from "react-icons/fc";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, AuthError } from "firebase/auth";
 import { auth } from "@/app/firebase/config";
+import { useSignInWithGoogle } from "react-firebase-hooks/auth";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("''");
-  const [password, setPassword] = useState("''");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const [signInWithGoogle, user, loading, googleError] =
+    useSignInWithGoogle(auth);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,11 +31,12 @@ export function LoginForm() {
         description: "Welcome back to Spartanville!",
       });
       router.push("/home");
-    } catch (error: any) {
+    } catch (error) {
       let errorMessage = "Failed to login. Please try again.";
+      const authError = error as AuthError;
 
       // Handle specific Firebase auth errors
-      switch (error.code) {
+      switch (authError.code) {
         case "auth/invalid-email":
           errorMessage = "Invalid email address.";
           break;
@@ -57,18 +61,20 @@ export function LoginForm() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    // Here you would implement the Google Sign-In logic
-    // For now, we'll just simulate a delay and successful login
-    setIsLoggingIn(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoggingIn(false);
-    console.log({
-      title: "Logged in with Google",
-      description: "Welcome to Spartanville!",
-    });
-    router.push("/home");
-  };
+  // Handle successful Google sign-in
+  useEffect(() => {
+    if (user) {
+      router.push("/home");
+    }
+  }, [user, router]);
+
+  // Handle Google sign-in error
+  useEffect(() => {
+    if (googleError) {
+      setError(googleError.message);
+      console.error("Google sign-in error:", googleError);
+    }
+  }, [googleError]);
 
   return (
     <div className="space-y-6">
@@ -94,8 +100,12 @@ export function LoginForm() {
             required
           />
         </div>
-        <Button type="submit" className="w-full" disabled={isLoggingIn}>
-          {isLoggingIn ? "'Logging in...'" : "'Login'"}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isLoggingIn || loading}
+        >
+          {isLoggingIn ? "Logging in..." : "Login"}
         </Button>
       </form>
 
@@ -113,11 +123,11 @@ export function LoginForm() {
       <Button
         variant="outline"
         className="w-full"
-        onClick={handleGoogleSignIn}
-        disabled={isLoggingIn}
+        onClick={() => signInWithGoogle()}
+        disabled={isLoggingIn || loading}
       >
         <FcGoogle className="mr-2 h-4 w-4" />
-        Sign in with Google
+        {loading ? "Signing in..." : "Sign in with Google"}
       </Button>
     </div>
   );
