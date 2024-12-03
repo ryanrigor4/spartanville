@@ -86,6 +86,8 @@ export function AIEventAssistant({ onClose }: AIEventAssistantProps) {
       User question: ${query}
 
       Please provide a helpful, concise response based on the available event information. If asked about attendance, provide exact numbers. If asked about recommendations, suggest specific events that match the criteria. If the information isn't available, politely say so.
+
+      Format the response in a human-readable that flows into a next well-formed sentence.
     `;
 
     try {
