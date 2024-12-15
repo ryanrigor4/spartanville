@@ -7,13 +7,28 @@ const config: Config = {
     "^@/components/(.*)$": "<rootDir>/components/$1",
     "^@/app/(.*)$": "<rootDir>/app/$1",
     "^@/lib/(.*)$": "<rootDir>/lib/$1",
+    "^@/hooks/(.*)$": "<rootDir>/hooks/$1",
     "\\.(css|less|sass|scss)$": "identity-obj-proxy",
   },
   transform: {
-    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest",
+    "^.+\\.(t|j)sx?$": [
+      "@swc/jest",
+      {
+        jsc: {
+          transform: {
+            react: {
+              runtime: "automatic",
+            },
+          },
+        },
+      },
+    ],
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
-  testMatch: ["**/__tests__/**/*.(test|spec).(ts|tsx)"],
+  testMatch: [
+    "**/__tests__/**/*.test.[jt]s?(x)",
+    "**/?(*.)+(spec|test).[jt]s?(x)",
+  ],
   testPathIgnorePatterns: ["/node_modules/", "/.next/"],
   collectCoverageFrom: [
     "**/*.{ts,tsx}",
