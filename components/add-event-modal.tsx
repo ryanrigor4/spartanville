@@ -79,25 +79,33 @@ export function AddEventModal({ isOpen, onClose }: AddEventModalProps) {
         <DialogHeader>
           <DialogTitle>Add New Event</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          role="form"
+          data-testid="add-event-form"
+        >
           <Input
             type="text"
             placeholder="Event Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
+            aria-label="event title"
           />
           <Input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
+            aria-label="event date"
           />
           <Input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             required
+            aria-label="event time"
           />
           <Input
             type="text"
