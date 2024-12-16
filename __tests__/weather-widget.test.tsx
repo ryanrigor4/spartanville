@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { WeatherWidget } from "./weather-widget";
+import { WeatherWidget } from "../components/weather-widget";
 
 // Mock the fetch function
 global.fetch = jest.fn(() =>
