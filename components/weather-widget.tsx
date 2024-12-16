@@ -67,9 +67,11 @@ export function WeatherWidget() {
   }, []);
 
   const getWeatherIcon = (precipProb: number) => {
-    if (precipProb > 30) return <CloudRain className="w-6 h-6" />;
-    if (precipProb > 10) return <Cloud className="w-6 h-6" />;
-    return <Sun className="w-6 h-6" />;
+    if (precipProb > 30)
+      return <CloudRain data-testid="weather-icon" className="w-6 h-6" />;
+    if (precipProb > 10)
+      return <Cloud data-testid="weather-icon" className="w-6 h-6" />;
+    return <Sun data-testid="weather-icon" className="w-6 h-6" />;
   };
 
   return (
