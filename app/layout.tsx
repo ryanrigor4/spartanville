@@ -15,6 +15,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // add
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
   const pathname = usePathname();
